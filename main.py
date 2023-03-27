@@ -52,7 +52,7 @@ def sale(message):
 def process_sale(message):
     chat_id = message.chat.id
     sale = sale_handler[chat_id]
-    response, keyboard = sale.process_step(message)
+    response, keyboard = sale.process_step(message), None
 
     if keyboard:
         bot.send_message(chat_id, response, reply_markup=keyboard)

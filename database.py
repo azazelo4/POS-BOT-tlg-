@@ -65,7 +65,7 @@ def get_min_price(product):
     connection = create_connection()
     cursor = connection.cursor()
     query = "SELECT min_price FROM products WHERE id = %s"
-    cursor.execute(query, (product['id'],))
+    cursor.execute(query, (product[0],))
     min_price = None
     result = cursor.fetchone()
     if result:
