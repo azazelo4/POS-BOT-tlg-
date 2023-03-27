@@ -8,7 +8,6 @@ def authorize_user(phone_number):
             'id': user[0],
             'store_id': user[1],
             'role': user[3],
-            'phone': user[2],
             'name': user[4]
         }
         return user_data

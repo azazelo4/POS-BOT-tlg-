@@ -23,7 +23,7 @@ def get_user_by_phone(phone_number):
     cursor = connection.cursor()
     query = "SELECT * FROM users WHERE phone_number = %s"
     cursor.execute(query, (phone_number,))
-    user = cursor.fetchall()
+    user = cursor.fetchone()
     cursor.close()
     connection.close()
     return user
