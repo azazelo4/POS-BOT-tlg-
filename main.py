@@ -21,7 +21,6 @@ def start(message):
     bot.send_message(message.chat.id, "Пожалуйста, поделитесь своим номером телефона для авторизации:", reply_markup=keyboard)
 
 @bot.message_handler(content_types=['contact'])
-@bot.message_handler(content_types=['contact'])
 def handle_contact(message):
     phone_number = message.contact.phone_number
     user_data_dict = authorize_user(phone_number)
