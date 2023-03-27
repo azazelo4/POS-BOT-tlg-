@@ -21,30 +21,22 @@ def start(message):
     bot.send_message(message.chat.id, "Пожалуйста, поделитесь своим номером телефона для авторизации:", reply_markup=keyboard)
 
 @bot.message_handler(content_types=['contact'])
+@bot.message_handler(content_types=['contact'])
 def handle_contact(message):
     phone_number = message.contact.phone_number
-    user_info = authorize_user(phone_number)
-    id, user_role, store_id, user_name = user_info
-    chat_id = message.chat.id
-    user_data[chat_id] = {
-            'id': get_user_by_phone(phone_number)[0], # Предполагая, что 'id' - это первое поле в таблице 'users'
-            'role': user_role,
-            'store_id': store_id,
-            'name': user_name
-        }
-    
-    if user_info:
-        bot.send_message(message.chat.id, f"Добро пожаловать, {user_name}!")
-        keyboard = create_buttons(user_role)
-        bot.send_message(message.chat.id, "Выберите действие:", reply_markup=keyboard)
-        
+    user_data_dict = authorize_user(phone_number)
 
+    if user_data_dict:
+        user_role = user_data_dict['role']
+        chat_id = message.chat.id
+        user_data[chat_id] = user_data_dict
+        bot.send_message(chat_id, f"Добро пожаловать, {user_role}!")
+        keyboard = create_buttons(user_role)
+        bot.send_message(chat_id, "Выберите действие:", reply_markup=keyboard)
+        # Ваш код для продолжения работы с ботом в зависимости от роли пользователя
     else:
         bot.send_message(message.chat.id, "Извините, ваш номер телефона не найден.")
-    if chat_id in user_data:
-        user_role = user_data[chat_id]['role']
-    else:
-        bot.send_message(chat_id, "Вы не авторизованы.")
+
 
 @bot.message_handler(func=lambda message: message.text == "Продажа")
 def sale(message):
