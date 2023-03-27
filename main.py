@@ -26,10 +26,11 @@ def handle_contact(message):
     user_data_dict = authorize_user(phone_number)
 
     if user_data_dict:
+        user_name = user_data_dict['name']
         user_role = user_data_dict['role']
         chat_id = message.chat.id
         user_data[chat_id] = user_data_dict
-        bot.send_message(chat_id, f"Добро пожаловать, {user_role}!")
+        bot.send_message(chat_id, f"Добро пожаловать, {user_name}!")
         keyboard = create_buttons(user_role)
         bot.send_message(chat_id, "Выберите действие:", reply_markup=keyboard)
         # Ваш код для продолжения работы с ботом в зависимости от роли пользователя

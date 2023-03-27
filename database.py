@@ -21,7 +21,7 @@ def create_connection():
 def get_user_by_phone(phone_number):
     connection = create_connection()
     cursor = connection.cursor()
-    query = "SELECT id, name, role, store_id FROM users WHERE phone_number = %s"
+    query = "SELECT * FROM users WHERE phone_number = %s"
     cursor.execute(query, (phone_number,))
     user = cursor.fetchall()
     cursor.close()

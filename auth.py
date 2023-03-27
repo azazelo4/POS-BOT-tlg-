@@ -6,8 +6,10 @@ def authorize_user(phone_number):
     if user:
         user_data = {
             'id': user[0],
-            'role': user[2],
-            'store_id': user[3]
+            'store_id': user[1],
+            'role': user[3],
+            'phone': user[2],
+            'name': user[4]
         }
         return user_data
     else:
