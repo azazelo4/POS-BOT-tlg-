@@ -26,16 +26,18 @@ def handle_contact(message):
     user_data_dict = authorize_user(phone_number)
 
     if user_data_dict:
-        user_name = user_data_dict['name']
-        user_role = user_data_dict['role']
         chat_id = message.chat.id
         user_data[chat_id] = user_data_dict
-        bot.send_message(chat_id, f"Добро пожаловать, {user_name}!")
-        keyboard = create_buttons(user_role)
-        bot.send_message(chat_id, "Выберите действие:", reply_markup=keyboard)
-        # Ваш код для продолжения работы с ботом в зависимости от роли пользователя
+
+        if user_data_dict['role'] == 'cashier':
+            keyboard = create_cashier_buttons()
+        elif user_data_dict['role'] == 'admin':
+            keyboard = create_admin_buttons()
+
+        bot.send_message(chat_id, f"Здравствуйте, {user_data_dict['name']}! Вы авторизованы как {user_data_dict['role']}.", reply_markup=keyboard)
     else:
-        bot.send_message(message.chat.id, "Извините, ваш номер телефона не найден.")
+        bot.send_message(message.chat.id, "Номер телефона не найден. Пожалуйста, зарегистрируйтесь.")
+
 
 
 @bot.message_handler(func=lambda message: message.text == "Продажа")

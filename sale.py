@@ -45,8 +45,8 @@ class Sale:
 
         elif self.state == CONFIRM_SALE:
             if message.text == "Подтвердить":
-                user_id = user_data[message.chat.id]['id']
-                store_id = user_data[message.chat.id]['store_id']
+                user_id = user_data[chat_id]['id']
+                store_id = user_data[chat_id]['store_id']
                 record_sale(self.product['id'], store_id, user_id, self.sale_price)
                 self.reset()
                 return "Продажа подтверждена."
