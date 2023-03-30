@@ -17,7 +17,7 @@ def create_admin_buttons():
     button_refunds = types.KeyboardButton("Возврат")
     button_trade_in = types.KeyboardButton("Trade-In")
     button_purchases = types.KeyboardButton("Скупка")
-    button_product_cards = types.KeyboardButton("добавить товар")
+    button_product_cards = types.KeyboardButton("Добавить товар")
     button_reports = types.KeyboardButton("Отчеты")
     button_access_rights = types.KeyboardButton("Права")
     button_inventory_count = types.KeyboardButton("Ревизия")
