@@ -7,7 +7,8 @@ def create_cashier_buttons():
     button_refunds = types.KeyboardButton("Возврат")
     button_trade_in = types.KeyboardButton("Trade-In")
     button_purchases = types.KeyboardButton("Скупка")
-    keyboard.add(button_sales, button_refunds, button_trade_in, button_purchases)
+    button_cancel = types.KeyboardButton("Отмена")
+    keyboard.add(button_sales, button_refunds, button_trade_in, button_purchases, button_cancel)
     return keyboard
 
 # Create a function to generate the appropriate buttons for the admin's functionality
@@ -21,6 +22,7 @@ def create_admin_buttons():
     button_reports = types.KeyboardButton("Отчеты")
     button_access_rights = types.KeyboardButton("Права")
     button_inventory_count = types.KeyboardButton("Ревизия")
+    button_cancel = types.KeyboardButton("Отмена")
     keyboard.add(button_sales, button_refunds, button_trade_in, button_purchases)
-    keyboard.add(button_product_cards, button_reports, button_access_rights, button_inventory_count)
+    keyboard.add(button_product_cards, button_reports, button_access_rights, button_inventory_count, button_cancel)
     return keyboard

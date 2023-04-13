@@ -15,13 +15,18 @@ class Sale:
         self.product = None
         self.min_price = None
 
-    def process_step(self, message):
+    def process_step(self, message, user_data):
         keyboard = None
         response = ""
+        if message.text == 'Отмена':
+            return None, None
         if self.state == WAITING_ARTICLE:
             self.article = message.text
             self.product = get_product_by_article(self.article)
             if self.product:
+                product = {
+                    
+                }
                 self.min_price = get_min_price(self.product)
                 response = f"Артикул найден. Минимальная цена: {self.min_price}\nВведите сумму продажи:"
                 self.next_step()
@@ -38,6 +43,8 @@ class Sale:
                 keyboard.add(button_cash, button_non_cash)
                 response = "Выберите тип расчета:"
                 self.next_step()
+            elif message.text == 'Отмена':
+                return None, None
             else:
                 response = f"Сумма продажи не может быть меньше минимальной цены ({self.min_price}). Введите корректную сумму продажи."
             return response, keyboard
@@ -59,17 +66,18 @@ class Sale:
                 record_sale(self.product['id'], store_id, user_id, self.sale_price)
                 self.reset()
                 response = "Продажа подтверждена."
-        else:
-            self.reset()
-            response = "Продажа отменена."
+            else:
+                self.reset()
+                response = "Продажа отменена."
         return response
+
 
 
     def next_step(self):
         self.state = (self.state + 1) % 4
 
     def reset(self):
-        self.state = WAITING_ARTICLE
+        self.state = None
         self.article = None
         self.sale_price = None
         self.payment_type = None
