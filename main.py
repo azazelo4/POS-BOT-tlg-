@@ -67,33 +67,30 @@ def help_command(message):
 @bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is None and message.text == 'Продажа')
 def start_sale(message):
     chat_id = message.chat.id
-    user_data_dict = user_data.get(chat_id)
-    sale_handler[chat_id] = Sale(user_data_dict)
-    response = "Введите артикул товара:"
-    return response
-
-
+    if chat_id in user_data:
+        sale_handler[chat_id] = Sale(user_data[chat_id])
+        bot.send_message(chat_id, "Введите артикул товара:")
+    else:
+        bot.send_message(chat_id, "Вы не авторизованы. Пожалуйста, поделитесь своим номером телефона для авторизации, введя команду /start.")
+    
 def process_sale_step(message, chat_id, user_data):
     sale = sale_handler.get(chat_id, None)
     chat_id = message.chat.id
     if sale is None:
         return "Ошибка: техническая проблема.", None
     else:
-        if sale is not None:
-            result = sale.process_step(message, user_data)
-            if result is None:
-                sale.reset()
-                del sale_handler[chat_id]
-                keyboard = get_keyboard_by_role(chat_id)
-                bot.send_message(chat_id, "Продажа отменена.", reply_markup=keyboard)
-            else:
-                if isinstance(result, tuple):
-                    response, keyboard = result
-                else:
-                    response, keyboard = result, get_keyboard_by_role(chat_id)
-                bot.send_message(chat_id, response, reply_markup=keyboard)
+        result = sale.process_step(message, user_data)
+        if result is None:
+            sale.reset()
+            del sale_handler[chat_id]
+            keyboard = get_keyboard_by_role(chat_id)
+            bot.send_message(chat_id, "Продажа отменена.", reply_markup=keyboard)
         else:
-            bot.send_message(chat_id, "Ошибка: невозможно обработать шаг продажи.")
+            if isinstance(result, tuple):
+                response, keyboard = result
+            else:
+                response, keyboard = result, get_keyboard_by_role(chat_id)
+            bot.send_message(chat_id, response, reply_markup=keyboard)
 
 @bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is not None and sale_handler[message.chat.id].state == SaleState.WAITING_ARTICLE)
 def process_article(message):

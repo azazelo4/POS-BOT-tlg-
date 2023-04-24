@@ -58,11 +58,11 @@ def get_store_by_id(store_id):
     return store
 
 # Record a sale
-def record_sale(product_id, store_id, user_id, sale_price):
+def record_sale(product_id, store_id, user_id, sale_price, payment_type):
     connection = create_connection()
     cursor = connection.cursor()
-    query = "INSERT INTO sales (product_id, store_id, user_id, sale_date, sold_price) VALUES (%s, %s, %s, NOW(), %s)"
-    cursor.execute(query, (product_id, store_id, user_id, sale_price))
+    query = "INSERT INTO sales (product_id, store_id, user_id, sale_date, sold_price, payment_type) VALUES (%s, %s, %s, NOW(), %s, %s)"
+    cursor.execute(query, (product_id, store_id, user_id, sale_price, payment_type))
     connection.commit()
     cursor.close()
     connection.close()

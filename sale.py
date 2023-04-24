@@ -41,12 +41,12 @@ class Sale:
     def process_waiting_sale_price(self, message, user_data):
         if message.text == 'Отмена':
             self.reset()
-            return None, None
+            return None
         else:
             try:
                 self.sale_price = int(message.text)
             except ValueError:
-                return "Пожалуйста, введите корректное числовое значение суммы продажи.", None
+                return "Пожалуйста, введите корректное числовое значение суммы продажи."
 
             if self.sale_price >= self.min_price:
                 keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -55,6 +55,8 @@ class Sale:
                 button_cancel = types.KeyboardButton("Отмена")
                 keyboard.add(button_cash, button_non_cash, button_cancel)
                 response = "Выберите тип расчета:"
+                if message.text != 'Отмена':
+                    self.payment_type = (message.text)
                 self.state = SaleState.WAITING_PAYMENT_TYPE
             else:
                 response = f"Сумма продажи не может быть меньше минимальной цены ({self.min_price}). Введите корректную сумму продажи."
@@ -64,7 +66,7 @@ class Sale:
     def process_waiting_payment_type(self, message, user_data):
         if message.text == 'Отмена':
             self.reset()
-            return None, None
+            return None
         else:
             self.payment_type = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -81,12 +83,12 @@ class Sale:
         if user_id is not None:
             if message.text == "Подтвердить":
                 store_id = self.user_data.get('store_id')
-                record_sale(self.product['id'], store_id, user_id, self.sale_price)
+                record_sale(self.product['id'], store_id, user_id, self.sale_price, self.payment_type)
                 self.reset()
                 response = "Продажа подтверждена."
             else:
                 self.reset()
-                response = "Продажа отменена."
+                return None
         else:
             response = "Ошибка: пользователь не авторизован."
         return response
@@ -100,6 +102,8 @@ class Sale:
             return self.process_waiting_payment_type(message, user_data)
         elif self.state == SaleState.CONFIRM_SALE:
             return self.process_confirm_sale(message, user_data)
+        else:
+            return None
 
     def reset(self):
         self.state = SaleState.WAITING_ARTICLE
