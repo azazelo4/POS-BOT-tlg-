@@ -32,12 +32,19 @@ def get_user_by_phone(phone_number):
 def get_product_by_article(article_number):
     connection = create_connection()
     cursor = connection.cursor()
-    query = "SELECT * FROM products WHERE article_number = %s"
+    query = "SELECT * FROM products WHERE article_number LIKE %s"
     cursor.execute(query, (article_number,))
-    product = cursor.fetchone()
+    result = cursor.fetchone()
     cursor.close()
     connection.close()
-    return product
+
+    if result:
+        columns = ["id", "store_id", "article_number", "metal_type", "product_type", "weight", "price_per_gram", "price", "min_price", "arrival_date"]
+        product = dict(zip(columns, result))
+        return product
+    else:
+        return None
+
 
 # Get a store by its ID
 def get_store_by_id(store_id):
@@ -51,11 +58,11 @@ def get_store_by_id(store_id):
     return store
 
 # Record a sale
-def record_sale(product_id, store_id, user_id, sold_price):
+def record_sale(product_id, store_id, user_id, sale_price):
     connection = create_connection()
     cursor = connection.cursor()
     query = "INSERT INTO sales (product_id, store_id, user_id, sale_date, sold_price) VALUES (%s, %s, %s, NOW(), %s)"
-    cursor.execute(query, (product_id, store_id, user_id, sold_price))
+    cursor.execute(query, (product_id, store_id, user_id, sale_price))
     connection.commit()
     cursor.close()
     connection.close()

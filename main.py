@@ -38,6 +38,15 @@ def handle_contact(message):
     else:
         bot.send_message(message.chat.id, "Номер телефона не найден. Пожалуйста, зарегистрируйтесь.")
 
+def get_keyboard_by_role(chat_id):
+    role = user_data[chat_id]['role']
+    if role == 'cashier':
+        return create_cashier_buttons()
+    elif role == 'admin':
+        return create_admin_buttons()
+    else:
+        return None
+
 @bot.message_handler(commands=['help'])
 def help_command(message):
     help_text = """
@@ -54,78 +63,58 @@ def help_command(message):
 
     bot.send_message(message.chat.id, help_text)
 
-
-def get_keyboard_by_role(chat_id):
-    role = user_data[chat_id]['role']
-    if role == 'cashier':
-        return create_cashier_buttons()
-    elif role == 'admin':
-        return create_admin_buttons()
-    else:
-        return None
-
 #Sale function 
-sale = None
-
-@bot.message_handler(func=lambda message: sale is None and message.text == 'Продажа')
+@bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is None and message.text == 'Продажа')
 def start_sale(message):
-    global sale
-    sale = Sale()
-    bot.send_message(message.chat.id, 'Введите артикул:')
+    chat_id = message.chat.id
+    user_data_dict = user_data.get(chat_id)
+    sale_handler[chat_id] = Sale(user_data_dict)
+    response = "Введите артикул товара:"
+    return response
 
 
-@bot.message_handler(func=lambda message: sale is not None and sale.state == WAITING_ARTICLE)
+def process_sale_step(message, chat_id, user_data):
+    sale = sale_handler.get(chat_id, None)
+    chat_id = message.chat.id
+    if sale is None:
+        return "Ошибка: техническая проблема.", None
+    else:
+        if sale is not None:
+            result = sale.process_step(message, user_data)
+            if result is None:
+                sale.reset()
+                del sale_handler[chat_id]
+                keyboard = get_keyboard_by_role(chat_id)
+                bot.send_message(chat_id, "Продажа отменена.", reply_markup=keyboard)
+            else:
+                if isinstance(result, tuple):
+                    response, keyboard = result
+                else:
+                    response, keyboard = result, get_keyboard_by_role(chat_id)
+                bot.send_message(chat_id, response, reply_markup=keyboard)
+        else:
+            bot.send_message(chat_id, "Ошибка: невозможно обработать шаг продажи.")
+
+@bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is not None and sale_handler[message.chat.id].state == SaleState.WAITING_ARTICLE)
 def process_article(message):
-    response = sale.process_step(message, user_data)
-    if isinstance(response, tuple):
-        text, keyboard = response
-        bot.send_message(message.chat.id, text, reply_markup=keyboard)
-    else:
-        bot.send_message(message.chat.id, response)
+    chat_id = message.chat.id
+    process_sale_step(message, chat_id, user_data.get(chat_id))
 
-
-@bot.message_handler(func=lambda message: sale is not None and sale.state == WAITING_SALE_PRICE)
+@bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is not None and sale_handler[message.chat.id].state == SaleState.WAITING_SALE_PRICE)
 def process_sale_price(message):
-    response, keyboard = sale.process_step(message, user_data)
-    if response is None:
-        sale.reset()
-        sale = None
-        bot.send_message(message.chat.id, "Продажа отменена.")
-    else:
-        bot.send_message(message.chat.id, response, reply_markup=keyboard)
+    chat_id = message.chat.id
+    process_sale_step(message, chat_id, user_data.get(chat_id))
 
-
-@bot.message_handler(func=lambda message: sale is not None and sale.state == WAITING_PAYMENT_TYPE)
+@bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is not None and sale_handler[message.chat.id].state == SaleState.WAITING_PAYMENT_TYPE)
 def process_payment_type(message):
-    response, keyboard = sale.process_step(message)
-    bot.send_message(message.chat.id, response, reply_markup=keyboard)
+    chat_id = message.chat.id
+    process_sale_step(message, chat_id, user_data.get(chat_id))
 
-
-@bot.message_handler(func=lambda message: sale is not None and sale.state == CONFIRM_SALE)
+@bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is not None and sale_handler[message.chat.id].state == SaleState.CONFIRM_SALE)
 def confirm_sale(message):
-    global sale
-    response = sale.process_step(message)
-    bot.send_message(message.chat.id, response)
-    sale = None
-
-@bot.message_handler(func=lambda message: sale is not None and message.text == 'Отмена')
-def cancel_sale(message):
-    global sale
-    sale.reset()
-    sale = None
-    keyboard = get_keyboard_by_role(message.chat.id)
-    bot.send_message(message.chat.id, "Продажа отменена.", reply_markup=keyboard)
-
-@bot.message_handler(func=lambda message: sale is not None and sale.state == CONFIRM_SALE)
-def confirm_sale(message):
-    global sale
-    response = sale.process_step(message, user_data)
-    sale = None
-    keyboard = get_keyboard_by_role(message.chat.id)
-    bot.send_message(message.chat.id, response, reply_markup=keyboard)
-
-
-#
+    chat_id = message.chat.id
+    process_sale_step(message, chat_id, user_data.get(chat_id))
+####
 
 if __name__ == '__main__':
     bot.polling(none_stop=True)
