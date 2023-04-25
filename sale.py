@@ -102,8 +102,6 @@ class Sale:
             return self.process_waiting_payment_type(message, user_data)
         elif self.state == SaleState.CONFIRM_SALE:
             return self.process_confirm_sale(message, user_data)
-        else:
-            return None
 
     def reset(self):
         self.state = SaleState.WAITING_ARTICLE
