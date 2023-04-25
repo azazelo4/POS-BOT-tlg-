@@ -4,7 +4,6 @@ from config import TOKEN
 from auth import authorize_user
 from buttons import *
 from sale import *
-from commands import *
 from database import *
 
 bot = telebot.TeleBot(TOKEN)
@@ -50,12 +49,13 @@ def get_keyboard_by_role(chat_id):
 @bot.message_handler(commands=['help'])
 def help_command(message):
     help_text = """
+    Бот в разработке и все здесь только для тестирования
     Доступные команды:
     /start - начать диалог с ботом, запросить номер телефона для авторизации
     /help - отобразить список доступных команд
 
     Для кассиров:
-    Продажа - начать процесс продажи товара (введите артикул (12345678), сумму продажи и выберите тип оплаты)
+    Продажа - начать процесс продажи товара (введите тестовый артикул (12345678 или 2-1234), сумму продажи и выберите тип оплаты)
 
     Для администраторов:
     (список команд администратора, если есть)
@@ -76,21 +76,18 @@ def start_sale(message):
 def process_sale_step(message, chat_id, user_data):
     sale = sale_handler.get(chat_id, None)
     chat_id = message.chat.id
-    if sale is None:
-        return "Ошибка: техническая проблема.", None
+    result = sale.process_step(message, user_data)
+    if result is None or (sale.state == SaleState.WAITING_ARTICLE and result == "Продажа подтверждена."):
+        sale.reset()
+        del sale_handler[chat_id]
+        keyboard = get_keyboard_by_role(chat_id)
+        bot.send_message(chat_id, "Продажа отменена." if result is None else result, reply_markup=keyboard)
     else:
-        result = sale.process_step(message, user_data)
-        if result is None:
-            sale.reset()
-            del sale_handler[chat_id]
-            keyboard = get_keyboard_by_role(chat_id)
-            bot.send_message(chat_id, "Продажа отменена.", reply_markup=keyboard)
+        if isinstance(result, tuple):
+            response, keyboard = result
         else:
-            if isinstance(result, tuple):
-                response, keyboard = result
-            else:
-                response, keyboard = result, get_keyboard_by_role(chat_id)
-            bot.send_message(chat_id, response, reply_markup=keyboard)
+            response, keyboard = result, get_keyboard_by_role(chat_id)
+        bot.send_message(chat_id, response, reply_markup=keyboard)
 
 @bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is not None and sale_handler[message.chat.id].state == SaleState.WAITING_ARTICLE)
 def process_article(message):
