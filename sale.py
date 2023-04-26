@@ -1,7 +1,6 @@
 from enum import Enum
 from telebot import types
 from database import get_product_by_article, get_min_price, record_sale
-from main import user_data
 
 class SaleState(Enum):
     WAITING_ARTICLE = 1

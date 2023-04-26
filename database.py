@@ -81,4 +81,21 @@ def get_min_price(product):
     connection.close()
     return min_price
 
-# Get the maximum price of a product
+# Get report
+def generate_report(start_date, end_date):
+    connection = create_connection()
+    cursor = connection.cursor()
+    query = f"""
+            SELECT products.product_type, users.name, stores.name, sales.sold_price, sales.sale_date, sales.payment_type
+            FROM sales
+            JOIN products ON sales.product_id = products.id
+            JOIN users ON sales.user_id = users.id
+            JOIN stores ON sales.store_id = stores.id
+            WHERE sales.sale_date BETWEEN '{start_date}' AND '{end_date}'
+            GROUP BY sales.sale_date, sales.product_id, sales.user_id, sales.sold_price, products.product_type, users.name, sales.payment_type;
+            """
+    cursor.execute(query)
+    report_data = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return report_data
