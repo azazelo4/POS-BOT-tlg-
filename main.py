@@ -6,6 +6,8 @@ from buttons import *
 from sale import *
 from database import *
 from report import *
+import io
+
 
 
 bot = telebot.TeleBot(TOKEN)
@@ -97,7 +99,7 @@ def process_sale_step(message, chat_id, user_data):
             response, keyboard = result
         else:
             response, keyboard = result, get_keyboard_by_role(chat_id)
-        bot.send_document(chat_id, open('report.xlsx', 'rb'))
+        bot.send_message(chat_id, response, reply_markup=keyboard)
 
 
 @bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is not None and sale_handler[message.chat.id].state == SaleState.WAITING_ARTICLE)
@@ -133,18 +135,24 @@ def start_report(message):
 def process_report_step(message, chat_id, user_data):
     report = report_handler.get(chat_id, None)
     chat_id = message.chat.id
-    result = report.process_report_step(message, user_data)
-    if result is None or (report.state == ReportState.WAITING_TYPE and result == "Отчет готов."):
+    result = report.process_report_step(message, user_data, reply_markup=keyboard)
+    if result is None or (report.state == ReportState.WAITING_TYPE and result[1] == "Отчет готов."):
         report.reset()
         del report_handler[chat_id]
         keyboard = get_keyboard_by_role(chat_id)
-        bot.send_message(chat_id, "Операция отменена." if result is None else result, reply_markup=keyboard)
+        bot.send_message(chat_id, "Операция отменена." if result is None else result[1], reply_markup=keyboard)
     else:
-        if isinstance(result, tuple):
-            response, keyboard = result
+        if len(result) == 3:
+            wb, response, keyboard = result
         else:
-            response, keyboard = result, get_keyboard_by_role(chat_id)
+            response, keyboard = result
         bot.send_message(chat_id, response, reply_markup=keyboard)
+        if response == "Отчет готов.":
+            bot.send_document(chat_id, wb, filename='report.xlsx')
+        # wb, response, keyboard = result
+        # bot.send_message(chat_id, response, reply_markup=keyboard)
+        # if response == "Отчет готов.":
+        #     bot.send_document(chat_id, wb, filename='report.xlsx')
 
 @bot.message_handler(func=lambda message: report_handler.get(message.chat.id) is not None and report_handler[message.chat.id].state == ReportState.WAITING_TYPE)
 def process_type(message):
