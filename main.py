@@ -5,16 +5,14 @@ from auth import authorize_user
 from buttons import *
 from sale import *
 from database import *
-from report import *
+from report import Report
 import io
 
 
 
 bot = telebot.TeleBot(TOKEN)
 
-sale_handler = {}
 user_data = {}
-report_handler = {}
 
 #################----------- START -----------#################
 @bot.message_handler(commands=['start'])
@@ -76,6 +74,8 @@ def help_command(message):
     bot.send_message(message.chat.id, help_text)
 
 #################----------- Sale Function -----------#################
+sale_handler = {}
+
 @bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is None and message.text == 'Продажа')
 def start_sale(message):
     chat_id = message.chat.id
@@ -93,7 +93,7 @@ def process_sale_step(message, chat_id, user_data):
         sale.reset()
         del sale_handler[chat_id]
         keyboard = get_keyboard_by_role(chat_id)
-        bot.send_message(chat_id, "Операция отменена." if result is None else result, reply_markup=keyboard)
+        bot.send_message(chat_id, "Продажа отменена." if result is None else result, reply_markup=keyboard)
     else:
         if isinstance(result, tuple):
             response, keyboard = result
@@ -123,51 +123,26 @@ def confirm_sale(message):
     process_sale_step(message, chat_id, user_data.get(chat_id))
 
 #################----------- Report Function -----------#################
-@bot.message_handler(func=lambda message: report_handler.get(message.chat.id) is None and message.text == 'Отчеты')
-def start_report(message):
+report_handler = {}  # Add this line at the beginning of your script, after imports
+
+@bot.message_handler(func=lambda message: message.text == "Отчеты")
+def handle_report_messages(message):
     chat_id = message.chat.id
     if chat_id in user_data:
-        report_handler[chat_id] = Report(user_data[chat_id])
-        bot.send_message(chat_id, "Выберите тип отчета:")
+        report_handler[chat_id] = Report()
+        report = report_handler[chat_id]
+        response = report.process_message(message, chat_id, user_data)
+        if response:
+            if isinstance(response, tuple):
+                report_file, report_message, report_keyboard = response
+                with io.BytesIO(report_file.read()) as file:
+                    bot.send_document(message.chat.id, file)
+                bot.send_message(message.chat.id, report_message, reply_markup=report_keyboard)
+            else:
+                bot.send_message(message.chat.id, response)
     else:
         bot.send_message(chat_id, "Вы не авторизованы. Пожалуйста, поделитесь своим номером телефона для авторизации, введя команду /start.")
 
-def process_report_step(message, chat_id, user_data):
-    report = report_handler.get(chat_id, None)
-    chat_id = message.chat.id
-    result = report.process_report_step(message, user_data, reply_markup=keyboard)
-    if result is None or (report.state == ReportState.WAITING_TYPE and result[1] == "Отчет готов."):
-        report.reset()
-        del report_handler[chat_id]
-        keyboard = get_keyboard_by_role(chat_id)
-        bot.send_message(chat_id, "Операция отменена." if result is None else result[1], reply_markup=keyboard)
-    else:
-        if len(result) == 3:
-            wb, response, keyboard = result
-        else:
-            response, keyboard = result
-        bot.send_message(chat_id, response, reply_markup=keyboard)
-        if response == "Отчет готов.":
-            bot.send_document(chat_id, wb, filename='report.xlsx')
-        # wb, response, keyboard = result
-        # bot.send_message(chat_id, response, reply_markup=keyboard)
-        # if response == "Отчет готов.":
-        #     bot.send_document(chat_id, wb, filename='report.xlsx')
-
-@bot.message_handler(func=lambda message: report_handler.get(message.chat.id) is not None and report_handler[message.chat.id].state == ReportState.WAITING_TYPE)
-def process_type(message):
-    chat_id = message.chat.id
-    process_report_step(message, chat_id, user_data.get(chat_id))
-
-@bot.message_handler(func=lambda message: report_handler.get(message.chat.id) is not None and report_handler[message.chat.id].state == ReportState.WAITING_START_DATE)
-def process_start_date(message):
-    chat_id = message.chat.id
-    process_report_step(message, chat_id, user_data.get(chat_id))
-
-@bot.message_handler(func=lambda message: report_handler.get(message.chat.id) is not None and report_handler[message.chat.id].state == ReportState.WAITING_END_DATE)
-def process_end_date(message):
-    chat_id = message.chat.id
-    process_report_step(message, chat_id, user_data.get(chat_id))
 #################----------- END -----------#################
 
 if __name__ == '__main__':

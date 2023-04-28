@@ -3,25 +3,17 @@ import datetime
 from database import generate_report
 from telebot import types
 import openpyxl
-
-class ReportState(Enum):
-    WAITING_TYPE = 1
-    WAITING_START_DATE = 2
-    WAITING_END_DATE = 3
+import io
 
 class Report:
-    def __init__(self, user_data):
-        self.state = ReportState.WAITING_TYPE
-        #self.user_data = user_data
+    def __init__(self):
         self.today = datetime.date.today()
         self.start_date = None
         self.end_date = None
+        self.report_type = None
 
-    def process_waiting_type(self, message):
-        if message.text == 'Отмена':
-            self.reset()
-            return None
-        else:
+    def process_message(self, message, chat_id, user_data):
+        if message.text == 'Отчеты':
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             button_daily = types.KeyboardButton("Ежедневный")
             button_weekly = types.KeyboardButton("Еженедельный")
@@ -29,65 +21,67 @@ class Report:
             button_custom = types.KeyboardButton("Другой")
             button_cancel = types.KeyboardButton("Отмена")
             keyboard.add(button_daily, button_weekly, button_monthly, button_custom, button_cancel)
-            try:
-                keyboard = None
-                if message.text == "Ежедневный":
-                    start_date = self.today - datetime.timedelta(days=1)
-                    end_date = self.today
-                    report_data = generate_report(start_date, end_date)
-                    wb = self.generate_excel_report(report_data)
-                    response = "Отчет готов."
-                    self.reset()
-                elif message.text == "Еженедельный":
-                    start_date = self.today - datetime.timedelta(days=7)
-                    end_date = self.today
-                    report_data = generate_report(start_date, end_date)
-                    wb = self.generate_excel_report(report_data)
-                    response = "Отчет готов."
-                    self.reset()
-                elif message.text == "Ежемесячный":
-                    start_date = self.today - datetime.timedelta(days=30)
-                    end_date = self.today
-                    report_data = generate_report(start_date, end_date)
-                    wb = self.generate_excel_report(report_data)
-                    response = "Отчет готов."
-                    self.reset()
-                elif message.text == "Другой":
-                    self.state = ReportState.WAITING_START_DATE
-                    self.start_date = datetime.datetime.strptime(message.text, "%Y-%m-%d").date()
-                    return "Введите период отчета в формате ГГГГ-ММ-ДД:"
-            except ValueError:
+            self.report_type = 'start'
+            return None, "Выберите тип отчета:", keyboard
+        elif self.report_type == 'start':
+            if message.text == 'Отмена':
+                self.report_type = None
+                return "Отменено."
+            elif message.text in ["Ежедневный", "Еженедельный", "Ежемесячный"]:
+                self.report_type = message.text
+                start_date, end_date = self.get_report_dates(self.report_type)
+                report_data = generate_report(start_date, end_date)
+                wb = self.generate_excel_report(report_data)
+                response = "Отчет готов."
+                self.reset()
+                return wb, response, None
+            elif message.text == "Другой":
+                self.report_type = 'custom'
+                return "Введите дату начала отчета в формате ГГГГ-ММ-ДД:"
+            else:
                 return "Пожалуйста, выберите тип отчета:"
-            if keyboard is None:
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button_daily = types.KeyboardButton("Ежедневный")
-                button_weekly = types.KeyboardButton("Еженедельный")
-                button_monthly = types.KeyboardButton("Ежемесячный")
-                button_custom = types.KeyboardButton("Другой")
-                button_cancel = types.KeyboardButton("Отмена")
-                keyboard.add(button_daily, button_weekly, button_monthly, button_custom, button_cancel)
-        return wb, response, keyboard
-                
-    def process_waiting_start_date(self, message):
-        try:
-            self.start_date = datetime.datetime.strptime(message.text, "%Y-%m-%d").date()
-            self.state = ReportState.WAITING_END_DATE
-            return "Введите дату окончания отчета в формате ГГГГ-ММ-ДД"
-        except ValueError:
-            return "Неверный формат даты. Пожалуйста, введите дату в формате ГГГГ-ММ-ДД"
+        elif self.report_type == 'custom':
+            try:
+                self.start_date = datetime.datetime.strptime(message.text, "%Y-%m-%d").date()
+                self.report_type = 'custom_end'
+                return "Введите дату окончания отчета в формате ГГГГ-ММ-ДД"
+            except ValueError:
+                return "Неверный формат даты. Пожалуйста, введите дату в формате ГГГГ-ММ-ДД"
+        elif self.report_type == 'custom_end':
+            try:
+                self.end_date = datetime.datetime.strptime(message.text, "%Y-%m-%D").date()
+                report_data = generate_report(self.start_date, self.end_date)
+                wb = self.generate_excel_report(report_data)
+                response = "Отчет готов."
+                self.reset()
+                return wb, response, None
+            except ValueError:
+                return "Неверный формат даты. Пожалуйста, введите дату в формате ГГГГ-ММ-ДД"
+        else:
+            return "Неожиданное состояние"
 
-    def process_waiting_end_date(self, message):
-        try:
-            self.end_date = datetime.datetime.strptime(message.text, "%Y-%m-%d").date()
-            report_data = generate_report(self.start_date, self.end_date)
-            wb = self.generate_excel_report(report_data)
-            response = "Отчет готов."
-            self.reset()
-            return report_data, None, response
-        except ValueError:
-            return "техническая ошибка"
-        
-    def generate_excel_report(report, chat_id, report_data):
+    def reset(self):
+        self.start_date = None
+        self.end_date = None
+        self.report_type = None
+
+    def get_report_dates(self, report_type):
+        if report_type == "Ежедневный":
+            start_date = self.today - datetime.timedelta(days=1)
+            end_date = self.today
+        elif report_type == "Еженедельный":
+            start_date
+            start_date = self.today - datetime.timedelta(days=7)
+            end_date = self.today
+        elif report_type == "Ежемесячный":
+            start_date = self.today - datetime.timedelta(days=30)
+            end_date = self.today
+        else:
+            start_date = self.start_date
+            end_date = self.end_date
+        return start_date, end_date
+
+    def generate_excel_report(self, report_data):
         wb = openpyxl.Workbook()
         sheet = wb.active
         sheet['A1'] = 'Название товара'
@@ -107,17 +101,3 @@ class Report:
         wb.save(report_buffer)
         report_buffer.seek(0)  # Move the buffer's pointer to the beginning of the file
         return report_buffer
-
-    def reset(self):
-        self.state = ReportState.WAITING_TYPE
-        self.start_date = None
-        self.end_date = None
-        return None
-
-    def process_report_step(self, message):
-        if self.state == ReportState.WAITING_TYPE:
-            return self.process_waiting_type(message)
-        elif self.state == ReportState.WAITING_START_DATE:
-            return self.process_waiting_start_date(message)
-        elif self.state == ReportState.WAITING_END_DATE:
-            return self.process_waiting_end_date(message)

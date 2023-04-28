@@ -39,7 +39,7 @@ def get_product_by_article(article_number):
     connection.close()
 
     if result:
-        columns = ["id", "store_id", "article_number", "metal_type", "product_type", "weight", "price_per_gram", "price", "min_price", "arrival_date"]
+        columns = ["id", "store_id", "article_number", "metal_type", "product_type", "weight", "price_per_gram", "price", "min_price", "arrival_date", "quantity"]
         product = dict(zip(columns, result))
         return product
     else:
@@ -57,12 +57,14 @@ def get_store_by_id(store_id):
     connection.close()
     return store
 
-# Record a sale
 def record_sale(product_id, store_id, user_id, sale_price, payment_type):
     connection = create_connection()
     cursor = connection.cursor()
-    query = "INSERT INTO sales (product_id, store_id, user_id, sale_date, sold_price, payment_type) VALUES (%s, %s, %s, NOW(), %s, %s)"
-    cursor.execute(query, (product_id, store_id, user_id, sale_price, payment_type))
+    insert_query = """INSERT INTO sales (product_id, store_id, user_id, sale_date, sold_price, payment_type) 
+    VALUES (%s, %s, %s, NOW(), %s, %s)"""
+    cursor.execute(insert_query, (product_id, store_id, user_id, sale_price, payment_type))
+    update_query = """UPDATE products SET quantity = quantity - 1 WHERE id = %s"""
+    cursor.execute(update_query, (product_id,))
     connection.commit()
     cursor.close()
     connection.close()

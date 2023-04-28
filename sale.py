@@ -28,10 +28,16 @@ class Sale:
                 self.product = get_product_by_article(self.article)
                 if self.product:
                     self.min_price = self.product['min_price']
-                    response = f"Артикул найден.\n Изделие: {self.product['product_type']}.\n Цена: {self.product['price']}\n Минимальная цена: {self.product['min_price']}\nВведите сумму продажи:"
+                    response = f"""
+                    Артикул найден. 
+                    Изделие: {self.product['product_type']}.
+                    Цена: {self.product['price']}\n 
+                    Минимальная цена: {self.product['min_price']}\n
+                    Остаток: {self.product['quantity']}
+                    Введите сумму продажи:"""
                     self.state = SaleState.WAITING_SALE_PRICE
                 else:
-                    response = "Артикул не найден. Пожалуйста, введите корректный артикул."
+                    response = "Артикул не найден. Пожалуйста, введите корректный артикул:"
             except:
                 response = "Произошла ошибка. Попробуйте еще раз."
         return response
@@ -58,7 +64,8 @@ class Sale:
                     self.payment_type = (message.text)
                 self.state = SaleState.WAITING_PAYMENT_TYPE
             else:
-                response = f"Сумма продажи не может быть меньше минимальной цены ({self.min_price}). Введите корректную сумму продажи."
+                response = f"""Сумма продажи не может быть меньше минимальной цены ({self.min_price}). 
+                Введите корректную сумму продажи:"""
                 keyboard = None
             return response, keyboard
 
