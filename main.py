@@ -27,16 +27,13 @@ def start(message):
 def handle_contact(message):
     phone_number = message.contact.phone_number
     user_data_dict = authorize_user(phone_number)
-
     if user_data_dict:
         chat_id = message.chat.id
         user_data[chat_id] = user_data_dict
-
         if user_data_dict['role'] == 'cashier':
             keyboard = create_cashier_buttons()
         elif user_data_dict['role'] == 'admin':
             keyboard = create_admin_buttons()
-
         bot.send_message(chat_id, f"Здравствуйте, {user_data_dict['name']}! Вы авторизованы как {user_data_dict['role']}. для справки введите команду /help", reply_markup=keyboard)
     else:
         bot.send_message(chat_id, "Номер телефона не найден. Пожалуйста, обратитесь к администратору.")
@@ -125,23 +122,33 @@ def confirm_sale(message):
 #################----------- Report Function -----------#################
 report_handler = {}  # Add this line at the beginning of your script, after imports
 
-@bot.message_handler(func=lambda message: message.text == "Отчеты")
-def handle_report_messages(message):
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
     chat_id = message.chat.id
     if chat_id in user_data:
-        report_handler[chat_id] = Report()
+        if chat_id not in report_handler:
+            report_handler[chat_id] = Report()
         report = report_handler[chat_id]
-        response = report.process_message(message, chat_id, user_data)
-        if response:
-            if isinstance(response, tuple):
-                report_file, report_message, report_keyboard = response
-                with io.BytesIO(report_file.read()) as file:
-                    bot.send_document(message.chat.id, file)
-                bot.send_message(message.chat.id, report_message, reply_markup=report_keyboard)
-            else:
-                bot.send_message(message.chat.id, response)
+        
+        if message.text == "Отчеты" or report.report_type is not None:
+            response = report.process_message(message, chat_id)
+            if response:
+                if isinstance(response, tuple):
+                    report_file, report_message, report_keyboard = response
+                    if report_file is not None:
+                        with io.BytesIO(report_file.getvalue()) as file:
+                            bot.send_document(message.chat.id, file)
+                    if report_keyboard:
+                        bot.send_message(message.chat.id, report_message, reply_markup=report_keyboard)
+                    else:
+                        bot.send_message(message.chat.id, report_message)
+                else:
+                    bot.send_message(message.chat.id, response)
+        else:
+            bot.send_message(chat_id, "Введите команду, например /start или Отчеты.")
     else:
         bot.send_message(chat_id, "Вы не авторизованы. Пожалуйста, поделитесь своим номером телефона для авторизации, введя команду /start.")
+
 
 #################----------- END -----------#################
 

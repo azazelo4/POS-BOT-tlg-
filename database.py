@@ -57,6 +57,7 @@ def get_store_by_id(store_id):
     connection.close()
     return store
 
+# Record sale
 def record_sale(product_id, store_id, user_id, sale_price, payment_type):
     connection = create_connection()
     cursor = connection.cursor()
@@ -101,3 +102,20 @@ def generate_report(start_date, end_date):
     cursor.close()
     connection.close()
     return report_data
+
+# Update User
+# #def update_user(user_id, role):
+#     connection = create_connection()
+#     cursor = connection.cursor()
+#        query = f"""
+#           UPDATE `users` SET
+#           `store_id` = '%s',
+#           `phone_number` = '%s',
+#           `role` = %s,
+#           `name` = '%s'
+#           WHERE `id` = '%s';
+#           """
+#         cursor.execute(query)
+#         cursor.close()
+#         connection.close()
+#         return report_data

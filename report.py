@@ -12,7 +12,7 @@ class Report:
         self.end_date = None
         self.report_type = None
 
-    def process_message(self, message, chat_id, user_data):
+    def process_message(self, message, chat_id):
         if message.text == 'Отчеты':
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             button_daily = types.KeyboardButton("Ежедневный")
@@ -58,7 +58,7 @@ class Report:
             except ValueError:
                 return "Неверный формат даты. Пожалуйста, введите дату в формате ГГГГ-ММ-ДД"
         else:
-            return "Неожиданное состояние"
+            None, "Неожиданное состояние", None
 
     def reset(self):
         self.start_date = None
@@ -70,7 +70,6 @@ class Report:
             start_date = self.today - datetime.timedelta(days=1)
             end_date = self.today
         elif report_type == "Еженедельный":
-            start_date
             start_date = self.today - datetime.timedelta(days=7)
             end_date = self.today
         elif report_type == "Ежемесячный":

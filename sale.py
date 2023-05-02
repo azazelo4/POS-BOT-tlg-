@@ -1,6 +1,6 @@
 from enum import Enum
 from telebot import types
-from database import get_product_by_article, get_min_price, record_sale
+from database import get_product_by_article, record_sale
 
 class SaleState(Enum):
     WAITING_ARTICLE = 1
@@ -42,7 +42,6 @@ class Sale:
                 response = "Произошла ошибка. Попробуйте еще раз."
         return response
 
-
     def process_waiting_sale_price(self, message, user_data):
         if message.text == 'Отмена':
             self.reset()
@@ -82,7 +81,6 @@ class Sale:
             response = f"Артикул: {self.article}\nСумма продажи: {self.sale_price}\nТип расчета: {self.payment_type}\nПодтвердить или отменить?"
             self.state = SaleState.CONFIRM_SALE
         return response, keyboard
-
     
     def process_confirm_sale(self, message, user_id):
         user_id = self.user_data.get('id', None)
