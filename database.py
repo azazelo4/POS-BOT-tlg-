@@ -39,7 +39,7 @@ def get_product_by_article(article_number):
     connection.close()
 
     if result:
-        columns = ["id", "store_id", "article_number", "metal_type", "product_type", "weight", "price_per_gram", "price", "min_price", "arrival_date", "quantity"]
+        columns = ["id", "store_id", "article_number", "metal_type", "product_type","", "weight", "price_per_gram", "price", "min_price", "arrival_date", "quantity"]
         product = dict(zip(columns, result))
         return product
     else:
@@ -118,4 +118,3 @@ def generate_report(start_date, end_date):
 #         cursor.execute(query)
 #         cursor.close()
 #         connection.close()
-#         return report_data
