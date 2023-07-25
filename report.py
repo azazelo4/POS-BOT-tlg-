@@ -75,7 +75,7 @@ class Report:
         elif report_type == "Ежемесячный":
             start_date = self.today - datetime.timedelta(days=30)
             end_date = self.today
-        else:
+        elif report_type == "Другой":
             start_date = self.start_date
             end_date = self.end_date
         return start_date, end_date

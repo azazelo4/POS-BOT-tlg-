@@ -7,7 +7,7 @@ from sale import *
 from database import *
 from report import Report
 import io
-
+from datetime import date
 
 
 bot = telebot.TeleBot(TOKEN)
@@ -70,7 +70,7 @@ def help_command(message):
 
     bot.send_message(message.chat.id, help_text)
 
-#################----------- Sale Function -----------#################
+#################----------- SALES -----------#################
 sale_handler = {}
 
 @bot.message_handler(func=lambda message: sale_handler.get(message.chat.id) is None and message.text == 'Продажа')
@@ -119,11 +119,11 @@ def confirm_sale(message):
     chat_id = message.chat.id
     process_sale_step(message, chat_id, user_data.get(chat_id))
 
-#################----------- Report Function -----------#################
-report_handler = {}  # Add this line at the beginning of your script, after imports
+#################----------- REPORT -----------#################
+report_handler = {} 
 
-@bot.message_handler(func=lambda message: True)
-def handle_all_messages(message):
+@bot.message_handler(func=lambda message: message.text == 'Отчеты')
+def handle_report(message):
     chat_id = message.chat.id
     if chat_id in user_data:
         if chat_id not in report_handler:
@@ -137,7 +137,8 @@ def handle_all_messages(message):
                     report_file, report_message, report_keyboard = response
                     if report_file is not None:
                         with io.BytesIO(report_file.getvalue()) as file:
-                            bot.send_document(message.chat.id, file)
+                            filename = f"report_{date.today().isoformat()}.xlsx"
+                            bot.send_document(message.chat.id, file, filename = filename)
                     if report_keyboard:
                         bot.send_message(message.chat.id, report_message, reply_markup=report_keyboard)
                     else:
@@ -149,6 +150,13 @@ def handle_all_messages(message):
     else:
         bot.send_message(chat_id, "Вы не авторизованы. Пожалуйста, поделитесь своим номером телефона для авторизации, введя команду /start.")
 
+#################----------- USER ADD AND REMOVE -----------#################
+
+#################----------- RIGTHS -----------#################
+
+#################----------- ADD GOODS -----------#################
+
+#################----------- REVISION -----------#################
 
 #################----------- END -----------#################
 
